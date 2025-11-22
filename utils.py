@@ -35,6 +35,7 @@ def _display_detected_frames(conf, model_object, model_char, st_count, st_frame,
 
     # Predict the objects in the image using YOLOv8 model
     res_object = model_object.predict(image, conf=conf)
+    char_result = ''  # Initialize char_result to avoid UnboundLocalError
     for i in res_object:
         bbox = i.boxes
         for box in bbox:
@@ -90,10 +91,11 @@ def _display_detected_frames(conf, model_object, model_char, st_count, st_frame,
     st_frame.image(res_plotted,
                    caption='Detected Video',
                    channels="BGR",
-                   use_column_width=True
+                   use_container_width=True
                    )
     text_placeholder = st.empty()
-    text_placeholder.text(char_result)
+    if char_result:  # Only display if a plate was detected
+        text_placeholder.text(char_result)
     #st.write(char_result)
 
 
@@ -133,7 +135,7 @@ def infer_uploaded_image(conf, model_object, model_char):
             st.image(
                 image=source_img,
                 caption="Uploaded Image",
-                use_column_width=True
+                use_container_width=True
             )
 
     if source_img:
@@ -143,7 +145,9 @@ def infer_uploaded_image(conf, model_object, model_char):
                                     conf=conf)
                 boxes = res_object[0].boxes
                     #extract bounding box and class names
-                res_plotted = res_object[0].plot()[:, :, ::-1]    
+                res_plotted = res_object[0].plot()[:, :, ::-1]
+                char_display = []  # Initialize char_display to avoid UnboundLocalError
+                char_result = ''  # Initialize char_result to avoid UnboundLocalError
                 for i in res_object:
                     bbox = i.boxes
                     for box in bbox:
@@ -156,7 +160,7 @@ def infer_uploaded_image(conf, model_object, model_char):
 
                         #check plate to recognize characters with yolov8n model
                         if cls_names == 1:
-                            char_display = []
+                            char_display = []  # Reset for each plate
                             #crop plate from frame
                             plate_img = uploaded_image.crop((x1, y1, x2, y2))
                             #plate_img = uploaded_image[y1:y2, x1:x2]
@@ -184,8 +188,8 @@ def infer_uploaded_image(conf, model_object, model_char):
                 with col2:
                     st.image(res_plotted,
                              caption="Detected Image",
-                             use_column_width=True)
-                    if len(char_display) == 8:
+                             use_container_width=True)
+                    if char_result and len(char_display) == 8:  # Only display if plate was detected and has 8 characters
                         st.write(char_result)
                     try:
                         with st.expander("Detection Results"):
@@ -261,6 +265,7 @@ def infer_uploaded_webcam(conf, model_object, model_char):
                 _display_detected_frames(
                     conf,
                     model_object,
+                    model_char,
                     st_count,
                     st_frame,
                     image

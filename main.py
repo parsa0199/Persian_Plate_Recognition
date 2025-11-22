@@ -4,6 +4,23 @@ import math
 import time
 import datetime
 
+# Check if GUI is available
+def check_gui_support():
+    """Check if OpenCV has GUI support"""
+    try:
+        # Try to create a test window (this will fail if GUI is not available)
+        cv2.namedWindow('test', cv2.WINDOW_NORMAL)
+        cv2.destroyWindow('test')
+        return True
+    except cv2.error:
+        return False
+    except:
+        return False
+
+GUI_AVAILABLE = check_gui_support()
+if not GUI_AVAILABLE:
+    print("Warning: OpenCV GUI support not available. Display will be disabled, but output files will still be saved.")
+
 # Get the current timestamp for output names
 timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 # Define the file name with the timestamp
@@ -88,15 +105,18 @@ if total_frames > 1:
                 fps_text_loc = (frame_width - text_size[0] - 10, text_size[1] + 10)
                 cv2.putText(img, fps_text , fps_text_loc, fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=1, color=(10, 50, 255),thickness=2, lineType=cv2.LINE_AA)
 
-            cv2.imshow('detection', img)
+            if GUI_AVAILABLE:
+                cv2.imshow('detection', img)
+                # Break the loop if 'q' is pressed
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
             video_writer.write(img)
-            # Break the loop if 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
         else:
             break
     cap.release()
-    cv2.destroyAllWindows()
+    if GUI_AVAILABLE:
+        cv2.destroyAllWindows()
+    print(f"Video saved to: output/{output_videoname}")
 
                         
 else: #do inference for image
@@ -144,11 +164,15 @@ else: #do inference for image
                     cv2.line(img, (max(40, x1 - 25 ), max(40, y1 - 10)), (x2 + 25 ,y1 - 10), (0, 0, 0), 20,lineType=cv2.LINE_AA)
                     cv2.putText(img, char_result , (max(40, x1 - 15), max(40, y1 - 5)), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.5, color=(10, 50, 255),thickness=1, lineType=cv2.LINE_AA)
 
-    cv2.imshow('detection', img)
     cv2.imwrite('output/' + output_imagename, img)
-    # exit if 'q' is pressed
-    if cv2.waitKey(0) & 0xFF == ord("q"):
-        cap.release()
-        cv2.destroyAllWindows()
+    print(f"Image saved to: output/{output_imagename}")
+    if GUI_AVAILABLE:
+        cv2.imshow('detection', img)
+        # exit if 'q' is pressed
+        if cv2.waitKey(0) & 0xFF == ord("q"):
+            cv2.destroyAllWindows()
+    else:
+        print("Press Enter to exit...")
+        input()
 
 
