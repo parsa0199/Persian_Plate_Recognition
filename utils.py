@@ -94,7 +94,7 @@ def _display_detected_frames(conf, model_object, model_char, st_count, st_frame,
     st_frame.image(res_plotted,
                    caption='ویدیو تشخیص داده شده',
                    channels="BGR",
-                   use_container_width=True
+                   width='stretch'
                    )
     text_placeholder = st.empty()
     if char_result:  # Only display if a plate was detected
@@ -138,7 +138,7 @@ def infer_uploaded_image(conf, model_object, model_char):
             st.image(
                 image=source_img,
                 caption="تصویر بارگذاری شده",
-                use_container_width=True
+                width='stretch'
             )
 
     if source_img:
@@ -191,7 +191,7 @@ def infer_uploaded_image(conf, model_object, model_char):
                 with col2:
                     st.image(res_plotted,
                              caption="تصویر تشخیص داده شده",
-                             use_container_width=True)
+                             width='stretch')
                     if char_result and len(char_display) == 8:  # Only display if plate was detected and has 8 characters
                         st.write(f"**{char_result}**")
                     try:
@@ -371,7 +371,7 @@ def infer_compare(conf, model_object, model_char, source_type="Image"):
             st.image(
                 image=source_img,
                 caption="تصویر بارگذاری شده",
-                use_container_width=True
+                width='stretch'
             )
 
     if source_img and csv_file:
@@ -432,7 +432,7 @@ def infer_compare(conf, model_object, model_char, source_type="Image"):
                 with col2:
                     st.image(res_plotted,
                              caption="تصویر تشخیص داده شده",
-                             use_container_width=True)
+                             width='stretch')
                     
                     if detected_plates:
                         st.subheader("نتایج مقایسه")
@@ -524,7 +524,7 @@ def _display_compare_frames(conf, model_object, model_char, valid_plates, st_fra
     st_frame.image(res_plotted,
                    caption='ویدیو تشخیص داده شده',
                    channels="BGR",
-                   use_container_width=True
+                   width='stretch'
                    )
     
     # Display comparison results
