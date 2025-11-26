@@ -1,0 +1,10 @@
+{
+    "port": 8501,
+    "platform": "docker",
+    "disks":[
+        {
+            "name": "data",
+            "mountTo": "/app/"
+        }
+    ]
+}
