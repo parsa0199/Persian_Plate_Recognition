@@ -3,8 +3,8 @@
     "platform": "docker",
     "disks":[
         {
-            "name": "data",
-            "mountTo": "/app/"
+            "name": "weights",
+            "mountTo": "/app/weights"
         }
     ]
 }

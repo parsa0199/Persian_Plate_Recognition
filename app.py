@@ -8,11 +8,15 @@
    @Description:
 -------------------------------------------------
 """
+# VERSION: 2025-11-27-v2 - Fixed NameError with proper model loading checks
 from pathlib import Path
 import streamlit as st
 
 import config
 from utils import load_model, infer_uploaded_image, infer_uploaded_video, infer_uploaded_webcam, infer_compare
+
+# Print version to verify latest code is running
+print("[APP] Version: 2025-11-27-v2 - Fixed NameError")
 
 # Add Persian font styling (RTL layout)
 st.markdown("""
@@ -57,20 +61,58 @@ confidence = float(st.sidebar.slider(
     "انتخاب دقت مدل", 30, 100, 50)) / 100
 
 
-model_path_object = Path(config.DETECTION_MODEL_DIR, 'best.pt')
-print(model_path_object)
-model_path_char = Path(config.DETECTION_MODEL_DIR, 'yolov8n_char_new.pt')
+model_path_object = Path(config.DETECTION_MODEL_DIR) / 'best.pt'
+model_path_char = Path(config.DETECTION_MODEL_DIR) / 'yolov8n_char_new.pt'
 
- 
+# Debug: Print paths and check if files exist
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🔍 اطلاعات دیباگ")
+st.sidebar.text(f"مسیر weights: {config.DETECTION_MODEL_DIR}")
+st.sidebar.text(f"مسیر کامل best.pt: {model_path_object}")
+st.sidebar.text(f"مسیر کامل yolov8n: {model_path_char}")
+st.sidebar.text(f"best.pt وجود دارد: {model_path_object.exists()}")
+st.sidebar.text(f"yolov8n_char_new.pt وجود دارد: {model_path_char.exists()}")
+# Also print to console for server logs
+print(f"[DEBUG] DETECTION_MODEL_DIR: {config.DETECTION_MODEL_DIR}")
+print(f"[DEBUG] model_path_object: {model_path_object}")
+print(f"[DEBUG] model_path_object.exists(): {model_path_object.exists()}")
+print(f"[DEBUG] model_path_char: {model_path_char}")
+print(f"[DEBUG] model_path_char.exists(): {model_path_char.exists()}")
+
+# Initialize models as None - CRITICAL: Always initialize to prevent NameError
+model_object = None
+model_char = None
+models_loaded = False
 
 # load pretrained DL model
 try:
-
-    
-    model_object = load_model(model_path_object)
-    model_char = load_model(model_path_char)
+    # Check if files exist before loading
+    if not model_path_object.exists():
+        st.error(f"❌ فایل مدل پیدا نشد: {model_path_object}")
+        st.info("💡 لطفا مطمئن شوید که فایل‌های weights در Liara Disk آپلود شده‌اند")
+        models_loaded = False
+    elif not model_path_char.exists():
+        st.error(f"❌ فایل مدل کاراکتر پیدا نشد: {model_path_char}")
+        st.info("💡 لطفا مطمئن شوید که فایل‌های weights در Liara Disk آپلود شده‌اند")
+        models_loaded = False
+    else:
+        # Both files exist, try to load them
+        try:
+            model_object = load_model(str(model_path_object))
+            model_char = load_model(str(model_path_char))
+            models_loaded = True
+            st.sidebar.success("✅ مدل‌ها با موفقیت بارگذاری شدند")
+        except Exception as load_error:
+            st.error(f"❌ خطا در بارگذاری مدل: {str(load_error)}")
+            models_loaded = False
+            import traceback
+            st.code(traceback.format_exc(), language="python")
 except Exception as e:
-    st.error(f"نمیتوان مدل را بارگیری کرد. لطفا مسیر مشخص شده را بررسی کنید: {model_path_object}")
+    st.error(f"❌ خطا در بررسی مسیر مدل: {str(e)}")
+    st.error(f"مسیر بررسی شده: {model_path_object}")
+    models_loaded = False
+    import traceback
+    st.code(traceback.format_exc(), language="python")
 
 # image/video options
 st.sidebar.header("تنظیمات تصویر/ویدیو")
@@ -79,22 +121,36 @@ source_selectbox = st.sidebar.selectbox(
     config.SOURCES_LIST
 )
 
-source_img = None
-if task_type == "مقایسه":
-    # For Compare task, use the compare function with source selection
-    if source_selectbox == config.SOURCES_LIST[0]: # تصویر
-        infer_compare(confidence, model_object, model_char, source_type="Image")
-    elif source_selectbox == config.SOURCES_LIST[2]: # وبکام
-        infer_compare(confidence, model_object, model_char, source_type="Webcam")
-    else:
-        st.info("برای مقایسه، لطفا 'تصویر' یا 'وبکام' را انتخاب کنید")
-elif task_type == "تشخیص":
-    # For Detection task, use the original functions
-    if source_selectbox == config.SOURCES_LIST[0]: # تصویر
-        infer_uploaded_image(confidence, model_object, model_char)
-    elif source_selectbox == config.SOURCES_LIST[1]: # ویدیو
-        infer_uploaded_video(confidence, model_object, model_char)
-    elif source_selectbox == config.SOURCES_LIST[2]: # وبکام
-        infer_uploaded_webcam(confidence, model_object, model_char)
-    else:
-        st.error("فقط 'تصویر' و 'ویدیو' مناسب هستند")
+# Only proceed if models are loaded successfully - DOUBLE CHECK to prevent NameError
+if not models_loaded or model_object is None or model_char is None:
+    st.warning("⚠️ لطفا ابتدا مدل‌ها را بارگذاری کنید. فایل‌های weights باید در مسیر `/app/weights/` موجود باشند.")
+    st.info("""
+    **راهنمای آپلود weights در Liara:**
+    1. بعد از deploy، به Liara Dashboard بروید
+    2. به بخش Disks بروید
+    3. disk با نام "weights" را پیدا کنید
+    4. فایل‌های `best.pt` و `yolov8n_char_new.pt` را آپلود کنید
+    5. اپلیکیشن را restart کنید
+    """)
+    # CRITICAL: Stop execution here - don't call any inference functions
+    st.stop()
+else:
+    source_img = None
+    if task_type == "مقایسه":
+        # For Compare task, use the compare function with source selection
+        if source_selectbox == config.SOURCES_LIST[0]: # تصویر
+            infer_compare(confidence, model_object, model_char, source_type="Image")
+        elif source_selectbox == config.SOURCES_LIST[2]: # وبکام
+            infer_compare(confidence, model_object, model_char, source_type="Webcam")
+        else:
+            st.info("برای مقایسه، لطفا 'تصویر' یا 'وبکام' را انتخاب کنید")
+    elif task_type == "تشخیص":
+        # For Detection task, use the original functions
+        if source_selectbox == config.SOURCES_LIST[0]: # تصویر
+            infer_uploaded_image(confidence, model_object, model_char)
+        elif source_selectbox == config.SOURCES_LIST[1]: # ویدیو
+            infer_uploaded_video(confidence, model_object, model_char)
+        elif source_selectbox == config.SOURCES_LIST[2]: # وبکام
+            infer_uploaded_webcam(confidence, model_object, model_char)
+        else:
+            st.error("فقط 'تصویر' و 'ویدیو' مناسب هستند")

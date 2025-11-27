@@ -27,6 +27,6 @@ README.md
 packages.txt
 main.py
 assets/
-valid_plates.csv
 db.sqlite3
+
 

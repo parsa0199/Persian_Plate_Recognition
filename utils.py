@@ -18,6 +18,19 @@ import pandas as pd
 import re
 import io
 
+# Fix for PyTorch 2.6+ weights_only issue
+try:
+    import torch
+    # Add safe globals for YOLO model loading (PyTorch 2.6+ compatibility)
+    if hasattr(torch.serialization, 'add_safe_globals'):
+        try:
+            from ultralytics.nn.tasks import DetectionModel
+            torch.serialization.add_safe_globals([DetectionModel])
+        except (ImportError, AttributeError):
+            pass
+except ImportError:
+    pass
+
 
 charclassnames = ['0','9','b','d','ein','ein','g','gh','h','n','s','1','malul','n','s','sad','t','ta','v','y','2'
                   ,'3','4','5','6','7','8']

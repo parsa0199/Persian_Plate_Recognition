@@ -21,16 +21,28 @@ root_path = file_path.parent
 if root_path not in sys.path:
     sys.path.append(str(root_path))
 
-# Get the relative path of the root directory with respect to the current working directory
-ROOT = root_path.relative_to(Path.cwd())
+# Use absolute path for better compatibility across different environments
+# Try relative path first, fallback to absolute if relative fails
+try:
+    ROOT = root_path.relative_to(Path.cwd())
+except ValueError:
+    # If relative path fails (e.g., different drives on Windows or server issues), use absolute
+    ROOT = root_path
 
-print(ROOT)
+print(f"ROOT path: {ROOT}")
+print(f"Working directory: {Path.cwd()}")
 # Source
 SOURCES_LIST = ["تصویر", "ویدیو", "وبکام"]
 
 
-# DL model config
-DETECTION_MODEL_DIR = ROOT / 'weights'
+# DL model config - use absolute path for reliability
+# Try multiple path resolution methods for maximum compatibility
+DETECTION_MODEL_DIR = Path('/app/weights')  # Direct absolute path for Docker/Liara
+if not DETECTION_MODEL_DIR.exists():
+    # Fallback to relative path from config file
+    DETECTION_MODEL_DIR = root_path / 'weights'
+print(f"DETECTION_MODEL_DIR: {DETECTION_MODEL_DIR}")
+print(f"DETECTION_MODEL_DIR exists: {DETECTION_MODEL_DIR.exists()}")
 #print(DETECTION_MODEL_DIR)
 YOLOv8n = DETECTION_MODEL_DIR / "yolov8n_char_new.pt"
 YOLOv8s = DETECTION_MODEL_DIR / "best.pt"
