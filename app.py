@@ -8,15 +8,11 @@
    @Description:
 -------------------------------------------------
 """
-# VERSION: 2025-11-27-v2 - Fixed NameError with proper model loading checks
 from pathlib import Path
 import streamlit as st
 
 import config
 from utils import load_model, infer_uploaded_image, infer_uploaded_video, infer_uploaded_webcam, infer_compare
-
-# Print version to verify latest code is running
-print("[APP] Version: 2025-11-27-v2 - Fixed NameError")
 
 # Add Persian font styling (RTL layout)
 st.markdown("""
@@ -64,22 +60,7 @@ confidence = float(st.sidebar.slider(
 model_path_object = Path(config.DETECTION_MODEL_DIR) / 'best.pt'
 model_path_char = Path(config.DETECTION_MODEL_DIR) / 'yolov8n_char_new.pt'
 
-# Debug: Print paths and check if files exist
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔍 اطلاعات دیباگ")
-st.sidebar.text(f"مسیر weights: {config.DETECTION_MODEL_DIR}")
-st.sidebar.text(f"مسیر کامل best.pt: {model_path_object}")
-st.sidebar.text(f"مسیر کامل yolov8n: {model_path_char}")
-st.sidebar.text(f"best.pt وجود دارد: {model_path_object.exists()}")
-st.sidebar.text(f"yolov8n_char_new.pt وجود دارد: {model_path_char.exists()}")
-# Also print to console for server logs
-print(f"[DEBUG] DETECTION_MODEL_DIR: {config.DETECTION_MODEL_DIR}")
-print(f"[DEBUG] model_path_object: {model_path_object}")
-print(f"[DEBUG] model_path_object.exists(): {model_path_object.exists()}")
-print(f"[DEBUG] model_path_char: {model_path_char}")
-print(f"[DEBUG] model_path_char.exists(): {model_path_char.exists()}")
-
-# Initialize models as None - CRITICAL: Always initialize to prevent NameError
+# Initialize models as None
 model_object = None
 model_char = None
 models_loaded = False
@@ -101,7 +82,6 @@ try:
             model_object = load_model(str(model_path_object))
             model_char = load_model(str(model_path_char))
             models_loaded = True
-            st.sidebar.success("✅ مدل‌ها با موفقیت بارگذاری شدند")
         except Exception as load_error:
             st.error(f"❌ خطا در بارگذاری مدل: {str(load_error)}")
             models_loaded = False
