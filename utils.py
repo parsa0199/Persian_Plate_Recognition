@@ -17,6 +17,7 @@ import config
 import pandas as pd
 import re
 import io
+import numpy as np
 
 # Fix for PyTorch 2.6+ weights_only issue
 try:
@@ -263,34 +264,47 @@ def infer_uploaded_video(conf, model_object, model_char):
 
 def infer_uploaded_webcam(conf, model_object, model_char):
     """
-    Execute inference for webcam.
+    Execute inference for webcam using Streamlit's camera input (server-compatible).
     :param conf: Confidence of YOLOv8 model
-    :param model: An instance of the `YOLOv8` class containing the YOLOv8 model.
+    :param model_object: Object detection model
+    :param model_char: Character recognition model
     :return: None
     """
-    try:
-        flag = st.button(
-            label="⏹️ توقف"
-        )
-        vid_cap = cv2.VideoCapture(0)  # local camera
+    st.info("📹 برای استفاده از وبکام، لطفا اجازه دسترسی به دوربین را در مرورگر بدهید")
+    
+    # Use Streamlit's camera input widget (works on servers)
+    camera_image = st.camera_input(
+        label="وبکام",
+        help="تصویر را از وبکام خود بگیرید"
+    )
+    
+    if camera_image:
+        # Convert BytesIO to PIL Image, then to numpy array for OpenCV
+        pil_image = Image.open(camera_image)
+        # Convert PIL Image to numpy array (RGB format)
+        image_array = np.array(pil_image)
+        # Ensure it's a proper numpy array with correct dtype
+        if image_array.dtype != np.uint8:
+            image_array = image_array.astype(np.uint8)
+        # Convert RGB to BGR for OpenCV
+        image_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        
         st_count = st.empty()
         st_frame = st.empty()
-        while not flag:
-            success, image = vid_cap.read()
-            if success:
-                _display_detected_frames(
-                    conf,
-                    model_object,
-                    model_char,
-                    st_count,
-                    st_frame,
-                    image
-                )
-            else:
-                vid_cap.release()
-                break
-    except Exception as e:
-        st.error(f"خطا در بارگذاری ویدیو: {str(e)}")
+        
+        # Process the captured frame
+        _display_detected_frames(
+            conf,
+            model_object,
+            model_char,
+            st_count,
+            st_frame,
+            image_bgr
+        )
+        
+        # Option to capture another frame
+        if st.button("📸 ثبت فریم جدید"):
+            st.rerun()
 
 
 def extract_numbers(plate_string):
@@ -559,7 +573,7 @@ def _display_compare_frames(conf, model_object, model_char, valid_plates, st_fra
 
 def infer_compare_webcam(conf, model_object, model_char, csv_file):
     """
-    Execute inference and comparison for webcam.
+    Execute inference and comparison for webcam using Streamlit's camera input (server-compatible).
     :param conf: Confidence of YOLOv8 model
     :param model_object: Object detection model
     :param model_char: Character recognition model
@@ -578,29 +592,39 @@ def infer_compare_webcam(conf, model_object, model_char, csv_file):
         return
     
     st.success(f"✅ {len(valid_plates)} شماره پلاک معتبر از CSV بارگذاری شد")
+    st.info("📹 برای استفاده از وبکام، لطفا اجازه دسترسی به دوربین را در مرورگر بدهید")
     
-    try:
-        flag = st.button(
-            label="⏹️ توقف"
-        )
-        vid_cap = cv2.VideoCapture(0)  # local camera
+    # Use Streamlit's camera input widget (works on servers)
+    camera_image = st.camera_input(
+        label="وبکام",
+        help="تصویر را از وبکام خود بگیرید"
+    )
+    
+    if camera_image:
+        # Convert BytesIO to PIL Image, then to numpy array for OpenCV
+        pil_image = Image.open(camera_image)
+        # Convert PIL Image to numpy array (RGB format)
+        image_array = np.array(pil_image)
+        # Ensure it's a proper numpy array with correct dtype
+        if image_array.dtype != np.uint8:
+            image_array = image_array.astype(np.uint8)
+        # Convert RGB to BGR for OpenCV
+        image_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        
         st_frame = st.empty()
         st_status = st.empty()
         
-        while not flag:
-            success, image = vid_cap.read()
-            if success:
-                _display_compare_frames(
-                    conf,
-                    model_object,
-                    model_char,
-                    valid_plates,
-                    st_frame,
-                    st_status,
-                    image
-                )
-            else:
-                vid_cap.release()
-                break
-    except Exception as e:
-        st.error(f"خطا در بارگذاری وبکام: {str(e)}")
+        # Process the captured frame
+        _display_compare_frames(
+            conf,
+            model_object,
+            model_char,
+            valid_plates,
+            st_frame,
+            st_status,
+            image_bgr
+        )
+        
+        # Option to capture another frame
+        if st.button("📸 ثبت فریم جدید"):
+            st.rerun()
